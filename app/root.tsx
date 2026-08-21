@@ -8,7 +8,11 @@ import {
 } from "react-router";
 
 import type { Route } from "./+types/root";
+import { sessionMiddleware } from "./lib/session.server";
 import "./app.css";
+
+/** Gives every request a workspace id before any loader or action runs. */
+export const middleware: Route.MiddlewareFunction[] = [sessionMiddleware];
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -32,7 +36,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Meta />
         <Links />
       </head>
-      <body>
+      <body className="bg-zinc-50 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
         {children}
         <ScrollRestoration />
         <Scripts />

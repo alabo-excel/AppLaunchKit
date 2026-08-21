@@ -13,3 +13,42 @@ body {
     color-scheme: dark;
   }
 }
+
+/* Activity indicators. Both collapse to a static state when the visitor has
+   asked for reduced motion, so nothing loops indefinitely against their wishes. */
+
+@keyframes alk-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes alk-progress-slide {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(400%);
+  }
+}
+
+.alk-spin {
+  animation: alk-spin 0.7s linear infinite;
+  transform-origin: center;
+}
+
+.alk-progress-bar {
+  animation: alk-progress-slide 1.1s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .alk-spin {
+    animation: none;
+  }
+
+  .alk-progress-bar {
+    animation: none;
+    width: 100%;
+    opacity: 0.4;
+  }
+}
