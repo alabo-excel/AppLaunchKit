@@ -42,6 +42,10 @@ export type Layout = LayoutPlan & {
  * stacked — it becomes a thin sliver under a wide headline. In that case the
  * headline moves beside the screenshot instead, which is how good tablet store
  * assets are actually composed.
+ *
+ * Both layouts honour `screenshotFit`: covering fills the frame and crops the
+ * overflow, and in the side-by-side case the headline column also gives up
+ * width so the screenshot dominates the asset.
  */
 export function planLayout(input: {
   canvasWidth: number;
@@ -63,11 +67,16 @@ export function planLayout(input: {
     canvasIsWide && sourceIsTall ? "side-by-side" : "stacked";
 
   if (mode === "side-by-side") {
+    const covering = config.screenshotFit === "cover";
     const paddingX = Math.round(canvasWidth * 0.06);
-    const paddingY = Math.round(canvasHeight * 0.08);
+    // A covering panel is a solid block, so it can sit closer to the edges than
+    // a contained screenshot floating in space.
+    const paddingY = Math.round(canvasHeight * (covering ? 0.05 : 0.08));
     const gap = Math.round(canvasWidth * 0.05);
     const contentWidth = canvasWidth - paddingX * 2;
-    const textWidth = Math.round((contentWidth - gap) * 0.42);
+    // The screenshot is the subject; when it covers, the headline column yields
+    // width to it.
+    const textWidth = Math.round((contentWidth - gap) * (covering ? 0.32 : 0.42));
 
     return {
       mode,
@@ -141,18 +150,22 @@ export function finalizeLayout(
   let screenshotFit: ScreenshotFit;
 
   if (plan.mode === "side-by-side") {
-    // Always contain here. The box beside the headline is roughly square, so
-    // covering it with a tall phone screenshot would crop away half its height.
-    screenshotFit = "contain";
+    screenshotFit = config.screenshotFit;
 
-    const fitted = fitInside(
-      plan.screenshotBox,
-      sourceWidth,
-      sourceHeight,
-      config.screenshotScale,
-    );
+    const panel =
+      screenshotFit === "cover"
+        ? fillBox(plan.screenshotBox, config.screenshotScale)
+        : fitInside(
+            plan.screenshotBox,
+            sourceWidth,
+            sourceHeight,
+            config.screenshotScale,
+          );
+
+    // Centre the headline and the screenshot as one group, so a short headline
+    // doesn't leave a hole in the middle of a wide canvas.
     const gap = hasText ? plan.gap : 0;
-    const groupWidth = (hasText ? textWidth + gap : 0) + fitted.width;
+    const groupWidth = (hasText ? textWidth + gap : 0) + panel.width;
     const groupLeft = Math.round((plan.canvasWidth - groupWidth) / 2);
 
     textRect = {
@@ -162,7 +175,7 @@ export function finalizeLayout(
       height: textHeight,
     };
     screenshotRect = {
-      ...fitted,
+      ...panel,
       left: groupLeft + (hasText ? textWidth + gap : 0),
     };
   } else {
