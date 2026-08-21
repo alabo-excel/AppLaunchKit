@@ -11,7 +11,11 @@ import {
   groupTargetsByPlatform,
   storeTargets,
 } from "~/features/store/requirements";
-import { PLATFORM_LABELS, type Platform, type StoreTarget } from "~/features/store/types";
+import {
+  PLATFORM_LABELS,
+  type Platform,
+  type StoreTarget,
+} from "~/features/store/types";
 import type { AssetValidation } from "~/features/store/validate";
 import { templates } from "~/features/templates/registry";
 import { parseTemplateConfig } from "~/features/templates/config.server";
@@ -600,6 +604,22 @@ function Editor({
 
   const jobCount = screenshots.length * selectedTargets.length;
 
+  // Play takes 8 screenshots per device, Apple 10, and the workspace allows 10
+  // uploads — so a full workspace can quietly exceed what a store will accept.
+  const selected = selectedTargets
+    .map((id) => storeTargets.find((target) => target.id === id))
+    .filter((target): target is StoreTarget => target !== undefined);
+  const assetCap = selected.length
+    ? Math.min(...selected.map((target) => target.maxAssets))
+    : Number.POSITIVE_INFINITY;
+  const cappedPlatforms = [
+    ...new Set(
+      selected
+        .filter((target) => target.maxAssets === assetCap)
+        .map((target) => PLATFORM_LABELS[target.platform]),
+    ),
+  ];
+
   return (
     <div className="space-y-6">
       <div className="grid gap-6 xl:grid-cols-[1fr_280px]">
@@ -825,6 +845,15 @@ function Editor({
         <CardBody>
           <Form method="post" className="space-y-5">
             <input type="hidden" name="intent" value="generate" />
+
+            {screenshots.length > assetCap ? (
+              <Alert tone="warning">
+                {cappedPlatforms.join(" and ")} accepts {assetCap} screenshots
+                per device, and you have {screenshots.length}. All of them will
+                be generated — drop the extras from the listing, or delete a
+                screenshot here before exporting.
+              </Alert>
+            ) : null}
             {/* The style panel is uncontrolled markup; mirror it into the body. */}
             <ConfigFields config={config} />
 

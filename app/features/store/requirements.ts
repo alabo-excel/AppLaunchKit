@@ -2,12 +2,21 @@ import type { Orientation, Platform, StoreTarget } from "./types";
 
 const EIGHT_MB = 8 * 1024 * 1024;
 
+/** Google Play accepts 16:9 or 9:16 for phone, tablet and Chromebook shots. */
+const PLAY_ASPECT = { label: "16:9 or 9:16", value: 16 / 9 };
+
 /**
  * Every target AppLaunchKit can generate.
  *
- * IMPORTANT: these values reflect the store requirements at the time of
- * writing. Verify them against the current Google Play and App Store
- * documentation before launch — this module is the single place to change them.
+ * Provenance matters here, so it is recorded per entry:
+ *
+ * - Google Play 7-inch and 10-inch tablets are transcribed from the Play
+ *   Console field help and are exact.
+ * - Google Play phone and Chromebook, and every Apple entry, are still from
+ *   general knowledge. Verify them against the live store documentation before
+ *   relying on them.
+ *
+ * This module is the single place to change any of it.
  */
 const TARGETS: Omit<StoreTarget, "id">[] = [
   {
@@ -23,6 +32,8 @@ const TARGETS: Omit<StoreTarget, "id">[] = [
     maxHeight: 3840,
     allowedFormats: ["png", "jpeg"],
     maxFileSize: EIGHT_MB,
+    allowedAspectRatio: PLAY_ASPECT,
+    maxAssets: 8,
     notes: "16:9 or 9:16, 320–3840px per side, max 8MB.",
   },
   {
@@ -38,6 +49,8 @@ const TARGETS: Omit<StoreTarget, "id">[] = [
     maxHeight: 3840,
     allowedFormats: ["png", "jpeg"],
     maxFileSize: EIGHT_MB,
+    allowedAspectRatio: PLAY_ASPECT,
+    maxAssets: 8,
   },
   {
     platform: "google_play",
@@ -52,6 +65,10 @@ const TARGETS: Omit<StoreTarget, "id">[] = [
     maxHeight: 3840,
     allowedFormats: ["png", "jpeg"],
     maxFileSize: EIGHT_MB,
+    allowedAspectRatio: PLAY_ASPECT,
+    maxAssets: 8,
+    notes:
+      "Play Console: up to eight 7-inch tablet screenshots, PNG or JPEG, up to 8MB each, 16:9 or 9:16, each side 320–3,840px.",
   },
   {
     platform: "google_play",
@@ -66,6 +83,8 @@ const TARGETS: Omit<StoreTarget, "id">[] = [
     maxHeight: 3840,
     allowedFormats: ["png", "jpeg"],
     maxFileSize: EIGHT_MB,
+    allowedAspectRatio: PLAY_ASPECT,
+    maxAssets: 8,
   },
   {
     platform: "google_play",
@@ -74,12 +93,16 @@ const TARGETS: Omit<StoreTarget, "id">[] = [
     label: "10-inch tablet",
     targetWidth: 1620,
     targetHeight: 2880,
-    minWidth: 320,
-    maxWidth: 3840,
-    minHeight: 320,
-    maxHeight: 3840,
+    minWidth: 1080,
+    maxWidth: 7680,
+    minHeight: 1080,
+    maxHeight: 7680,
     allowedFormats: ["png", "jpeg"],
     maxFileSize: EIGHT_MB,
+    allowedAspectRatio: PLAY_ASPECT,
+    maxAssets: 8,
+    notes:
+      "Play Console: up to eight 10-inch tablet screenshots, PNG or JPEG, up to 8MB each, 16:9 or 9:16, each side 1,080–7,680px.",
   },
   {
     platform: "google_play",
@@ -88,12 +111,14 @@ const TARGETS: Omit<StoreTarget, "id">[] = [
     label: "10-inch tablet",
     targetWidth: 2880,
     targetHeight: 1620,
-    minWidth: 320,
-    maxWidth: 3840,
-    minHeight: 320,
-    maxHeight: 3840,
+    minWidth: 1080,
+    maxWidth: 7680,
+    minHeight: 1080,
+    maxHeight: 7680,
     allowedFormats: ["png", "jpeg"],
     maxFileSize: EIGHT_MB,
+    allowedAspectRatio: PLAY_ASPECT,
+    maxAssets: 8,
   },
   {
     platform: "google_play",
@@ -108,6 +133,8 @@ const TARGETS: Omit<StoreTarget, "id">[] = [
     maxHeight: 3840,
     allowedFormats: ["png", "jpeg"],
     maxFileSize: EIGHT_MB,
+    allowedAspectRatio: PLAY_ASPECT,
+    maxAssets: 8,
     notes: "Chromebook listings expect landscape 16:9 assets.",
   },
   {
@@ -123,6 +150,7 @@ const TARGETS: Omit<StoreTarget, "id">[] = [
     maxHeight: 2868,
     allowedFormats: ["png", "jpeg"],
     maxFileSize: null,
+    maxAssets: 10,
     notes: 'Accepted 6.5"/6.7" size. Apple also accepts 1320×2868 (6.9").',
   },
   {
@@ -138,6 +166,7 @@ const TARGETS: Omit<StoreTarget, "id">[] = [
     maxHeight: 1320,
     allowedFormats: ["png", "jpeg"],
     maxFileSize: null,
+    maxAssets: 10,
   },
   {
     platform: "apple_app_store",
@@ -152,6 +181,7 @@ const TARGETS: Omit<StoreTarget, "id">[] = [
     maxHeight: 2752,
     allowedFormats: ["png", "jpeg"],
     maxFileSize: null,
+    maxAssets: 10,
     notes: 'Accepted 12.9" size. Apple also accepts 2064×2752 (13").',
   },
   {
@@ -167,6 +197,7 @@ const TARGETS: Omit<StoreTarget, "id">[] = [
     maxHeight: 2064,
     allowedFormats: ["png", "jpeg"],
     maxFileSize: null,
+    maxAssets: 10,
   },
 ];
 

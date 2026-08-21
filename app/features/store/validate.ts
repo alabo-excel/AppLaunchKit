@@ -2,6 +2,9 @@ import { formatBytes } from "~/lib/format";
 
 import type { StoreTarget } from "./types";
 
+/** Integer pixel sizes rarely hit a ratio exactly; 16:9 lands within this. */
+const ASPECT_TOLERANCE = 0.01;
+
 export type AssetCheck = {
   label: string;
   ok: boolean;
@@ -54,6 +57,20 @@ export function validateGeneratedAsset(
     ok: orientationMatches,
     detail: orientationMatches ? target.orientation : expectedOrientation,
   });
+
+  // Google Play rejects anything that isn't 16:9 or 9:16, so this has to be
+  // checked rather than assumed from the target size being right.
+  if (target.allowedAspectRatio) {
+    const ratio =
+      Math.max(asset.width, asset.height) / Math.min(asset.width, asset.height);
+    const matches =
+      Math.abs(ratio - target.allowedAspectRatio.value) <= ASPECT_TOLERANCE;
+    checks.push({
+      label: `${target.allowedAspectRatio.label} aspect ratio`,
+      ok: matches,
+      detail: matches ? undefined : `Got ${ratio.toFixed(3)}:1`,
+    });
+  }
 
   const formatAllowed = (target.allowedFormats as string[]).includes(
     asset.format,

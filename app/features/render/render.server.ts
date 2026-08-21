@@ -4,6 +4,7 @@ import sharp, {
   type CreateText,
   type OverlayOptions,
   type ResizeOptions,
+  type Sharp,
 } from "sharp";
 
 import type { TemplateConfig } from "~/features/templates/types";
@@ -78,8 +79,13 @@ export async function renderAsset(input: RenderInput): Promise<RenderResult> {
   const layers: OverlayOptions[] = [];
 
   if (config.shadow) {
-    const shadow = await renderShadow(layout.screenshotRect, layout.cornerRadius);
-    layers.push(shadow);
+    const shadow = await renderShadow(
+      layout.screenshotRect,
+      layout.cornerRadius,
+      width,
+      height,
+    );
+    if (shadow) layers.push(shadow);
   }
 
   layers.push({
@@ -158,27 +164,78 @@ async function renderScreenshot(
 async function renderShadow(
   rect: Rect,
   cornerRadius: number,
-): Promise<OverlayOptions> {
+  canvasWidth: number,
+  canvasHeight: number,
+): Promise<OverlayOptions | null> {
   const shortSide = Math.min(rect.width, rect.height);
   const sigma = Math.max(1, Math.round(shortSide * 0.02));
   const spread = Math.ceil(sigma * 3);
   const offsetY = Math.round(shortSide * 0.015);
 
-  const canvasWidth = rect.width + spread * 2;
-  const canvasHeight = rect.height + spread * 2;
+  const shadowWidth = rect.width + spread * 2;
+  const shadowHeight = rect.height + spread * 2;
 
   const svg = Buffer.from(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${canvasWidth}" height="${canvasHeight}">` +
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${shadowWidth}" height="${shadowHeight}">` +
       `<rect x="${spread}" y="${spread}" width="${rect.width}" height="${rect.height}" ` +
       `rx="${cornerRadius}" ry="${cornerRadius}" fill="#000000" fill-opacity="0.22"/>` +
       `</svg>`,
   );
 
-  return {
-    input: await sharp(svg).blur(sigma).png().toBuffer(),
+  const blurred = sharp(svg).blur(sigma);
+
+  // The blur spreads past the screenshot on every side, so for a screenshot that
+  // nearly fills the asset the shadow is larger than the canvas. libvips refuses
+  // to composite an oversized layer, so clip it to what is actually visible.
+  return placeClipped(blurred, shadowWidth, shadowHeight, {
     left: rect.left - spread,
     top: rect.top - spread + offsetY,
-  };
+    canvasWidth,
+    canvasHeight,
+  });
+}
+
+/**
+ * Positions a layer on the canvas, cropping whatever falls outside it.
+ *
+ * `composite` requires a layer no larger than the base and a non-negative
+ * offset, so anything that overhangs an edge has to be trimmed here rather than
+ * left for libvips to reject. Returns null when nothing would be visible.
+ */
+async function placeClipped(
+  image: Sharp,
+  imageWidth: number,
+  imageHeight: number,
+  placement: {
+    left: number;
+    top: number;
+    canvasWidth: number;
+    canvasHeight: number;
+  },
+): Promise<OverlayOptions | null> {
+  const { left, top, canvasWidth, canvasHeight } = placement;
+
+  const cropLeft = Math.max(0, -left);
+  const cropTop = Math.max(0, -top);
+  const destLeft = Math.max(0, left);
+  const destTop = Math.max(0, top);
+
+  const width = Math.min(imageWidth - cropLeft, canvasWidth - destLeft);
+  const height = Math.min(imageHeight - cropTop, canvasHeight - destTop);
+
+  if (width <= 0 || height <= 0) return null;
+
+  const needsCrop =
+    cropLeft > 0 || cropTop > 0 || width < imageWidth || height < imageHeight;
+
+  const buffer = await (needsCrop
+    ? image.extract({ left: cropLeft, top: cropTop, width, height })
+    : image
+  )
+    .png()
+    .toBuffer();
+
+  return { input: buffer, left: destLeft, top: destTop };
 }
 
 type RenderedText = { buffer: Buffer; width: number; height: number };

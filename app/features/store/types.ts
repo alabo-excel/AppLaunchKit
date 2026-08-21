@@ -8,6 +8,9 @@ export type ImageFormat = "png" | "jpeg" | "webp";
  * `targetWidth`/`targetHeight` are what AppLaunchKit renders; the min/max bounds
  * are what the store will accept.
  */
+/** An aspect ratio a store accepts, expressed as long side ÷ short side. */
+export type AspectRatio = { label: string; value: number };
+
 export type StoreTarget = {
   /** Stable id, e.g. `google_play:tablet_7:portrait`. Used in URLs and forms. */
   id: string;
@@ -24,6 +27,14 @@ export type StoreTarget = {
   allowedFormats: ImageFormat[];
   /** Bytes. `null` when the store publishes no hard limit. */
   maxFileSize: number | null;
+  /**
+   * Omitted when the store states no aspect-ratio rule. Google Play requires
+   * 16:9 or 9:16 for phone, tablet and Chromebook screenshots; Apple does not
+   * publish an equivalent constraint.
+   */
+  allowedAspectRatio?: AspectRatio;
+  /** Most screenshots the store accepts for this device. */
+  maxAssets: number;
   notes?: string;
 };
 

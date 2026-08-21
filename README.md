@@ -99,32 +99,34 @@ mode and timing for each.
    2880×1620 — and the scaled-down preview is a faithful representation of the
    full-size asset rather than an approximation.
 3. **The source is scaled, never stretched.** Its aspect ratio is always
-   preserved. Two fits are available:
+   preserved. Two fits are available, and both layouts honour the choice:
    - **Cover** (default) fills the frame and crops whatever overflows, anchored
      to the top so the app's own header survives and the bottom is what gets
      cut. This is the usual store-screenshot look.
    - **Contain** shows the whole screenshot, letterboxed where the shapes differ.
 
    How much a cover crop costs depends on how far the target's shape is from the
-   source's. From a 9:16 phone screenshot: iPhone loses nothing, phone and
-   Android tablets lose ~9%, and iPad — a 3:4 canvas — loses about a third off
-   the bottom. Switch that run to Contain if you need the whole screen.
+   source's. From a 9:16 phone screenshot: iPhone loses nothing; phone and
+   Android tablet portrait lose ~9%; iPad portrait, a 3:4 canvas, loses about a
+   third; landscape targets lose about half. Switch a run to Contain if you need
+   the whole screen — it never crops, at the cost of much smaller output (a
+   landscape tablet drops from 56% of the canvas width to 27%).
 
-   Landscape targets always contain, whatever the setting: the box beside the
-   headline is roughly square, so covering it with a tall phone screenshot would
-   crop away half its height.
 4. **Tablet composition adapts.** A portrait phone screenshot dropped into a
    landscape tablet canvas would become a thin sliver under a wide headline, so
    the layout switches to side-by-side and centres the headline and screenshot as
-   one group. This is what makes a phone screenshot usable as a tablet asset
-   without owning a tablet.
+   one group. When covering, the headline column also gives up width so the
+   screenshot dominates the asset. This is what makes a phone screenshot usable
+   as a tablet asset without owning a tablet.
 5. **One pass covers the listing.** Generate renders every screenshot against
    every selected device. Each screenshot contributes its own caption as the
    headline, so a single run produces a correctly captioned set — shared styling,
    per-screenshot text.
 6. **Every asset is validated** against the target it was generated for
-   (dimensions, bounds, orientation, format, file size) before it is stored. A
-   render that fails validation is not saved.
+   (dimensions, per-side bounds, orientation, aspect ratio, format, file size)
+   before it is stored. A render that fails validation is not saved. The aspect
+   check matters for Google Play, which accepts only 16:9 or 9:16 — it is
+   asserted rather than assumed from the target size looking right.
 7. **Regenerating replaces.** A second run for the same screenshot and device
    supersedes the old asset instead of stacking duplicates into the export.
 
@@ -197,7 +199,9 @@ modules (`limits.ts`, `requirements.ts`) for the same reason.
   and a busy state naming each file as it uploads
 - Dimension/format/size analysis with low-resolution warnings
 - Reorder, delete, and per-screenshot captions
-- Device picker across all 11 Google Play and App Store targets
+- Device picker across all 11 Google Play and App Store targets, warning when
+  your screenshot count exceeds what a selected store accepts per device (Play
+  takes 8, Apple 10)
 - Minimal template with live server-rendered preview (debounced)
 - Headline, weight, alignment, text size, colours, screenshot fit (cover or
   contain), screenshot size, corner radius, drop shadow — remembered between
@@ -222,10 +226,16 @@ modules (`limits.ts`, `requirements.ts`) for the same reason.
 
 - A template is a render function, so the registry lives in
   `app/features/templates/registry.ts` rather than in data.
-- The store specs in `requirements.ts` reflect the requirements at the time of
-  writing. **Verify them against the current Google Play and App Store
-  documentation before you rely on them.** Apple now prefers the 6.9"/13" sizes
-  (1320×2868 and 2064×2752); both those and the sizes seeded here are accepted.
+- Store specs live in `requirements.ts`, and their provenance is recorded per
+  entry, because it is uneven:
+  - **Google Play 7-inch and 10-inch tablet** are transcribed from the Play
+    Console field help and are exact — including the detail that 10-inch has a
+    much tighter floor and higher ceiling (1,080–7,680px per side) than 7-inch
+    (320–3,840px).
+  - **Google Play phone and Chromebook, and every Apple entry**, are still from
+    general knowledge. **Verify them against the live store documentation before
+    you rely on them.** Apple now prefers the 6.9"/13" sizes (1320×2868 and
+    2064×2752); both those and the sizes here are accepted.
 - Headline text is drawn with whatever font the host's fontconfig resolves. Drop
   a file into `fonts/` to pin it — see [fonts/README.md](fonts/README.md).
 
