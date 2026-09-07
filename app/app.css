@@ -78,3 +78,7 @@ h1, h2 { text-wrap: balance; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
 }
+
+.color-swatch::-webkit-color-swatch-wrapper { padding: 0; }
+.color-swatch::-webkit-color-swatch { border: 1px solid rgb(128 128 128 / 30%); border-radius: 6px; }
+.color-swatch::-moz-color-swatch { border: 1px solid rgb(128 128 128 / 30%); border-radius: 6px; }

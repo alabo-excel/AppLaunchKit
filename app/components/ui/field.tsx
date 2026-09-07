@@ -69,14 +69,15 @@ export function Select({ className, ...props }: ComponentProps<"select">) {
 
 export function ColorInput({ className, ...props }: ComponentProps<"input">) {
   return (
-    <input
-      {...props}
-      type="color"
-      className={cn(
-        "h-11 w-full cursor-pointer rounded-lg border border-zinc-300 bg-white p-1",
-        "dark:border-zinc-700 dark:bg-zinc-900",
-        className,
-      )}
-    />
+    <div className={cn("flex h-11 items-center gap-2 rounded-lg border border-zinc-300 bg-white px-2.5 dark:border-zinc-700 dark:bg-zinc-900", className)}>
+      <input
+        {...props}
+        type="color"
+        className="color-swatch size-7 shrink-0 cursor-pointer overflow-hidden rounded-md border-0 bg-transparent p-0"
+      />
+      <span aria-hidden="true" className="pointer-events-none font-mono text-xs uppercase tracking-tight text-zinc-600 dark:text-zinc-300">
+        {String(props.value ?? props.defaultValue ?? "#000000")}
+      </span>
+    </div>
   );
 }

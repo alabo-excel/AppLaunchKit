@@ -147,8 +147,8 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
           <span className="brand-mark" aria-hidden="true"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="4" y="3" width="11" height="16" rx="3"/><path d="M9 21h8a3 3 0 0 0 3-3V8M8 7h3"/></svg></span>
           AppLaunchKit <span className="hidden text-xs font-medium text-zinc-500 sm:inline">/ Screenshot studio</span>
         </a>
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="rounded-full border border-zinc-200 px-3 py-1.5 text-xs text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">No account needed · 7-day workspace</span>
+        <div className="ml-auto flex items-center gap-3">
+          <span className="hidden text-xs text-zinc-500 lg:inline">No account needed · 7-day workspace</span>
           {screenshots.length > 0 || assets.length > 0 ? <RestartButton /> : null}
         </div>
       </header>
@@ -196,13 +196,13 @@ function RestartButton() {
   const busy = navigation.state !== "idle" || fetchers.some((fetcher) => fetcher.state !== "idle");
 
   return (
-    <Form method="post" replace className="space-y-1">
+    <Form method="post" replace className="flex shrink-0 items-center">
       <input type="hidden" name="intent" value="restart" />
-      <Button type="submit" variant="secondary" disabled={busy} aria-describedby="restart-hint">
+      <Button type="submit" variant="ghost" size="sm" className="whitespace-nowrap" disabled={busy} aria-describedby="restart-hint" title="Clear screenshots, exports, and styling">
         {restarting ? <Spinner /> : <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3 10a9 9 0 1 1 2 8M3 4v6h6" /></svg>}
         {restarting ? "Starting over…" : "Start over"}
       </Button>
-      <p id="restart-hint" className="text-xs text-zinc-500">Clears screenshots, exports, and styling.</p>
+      <p id="restart-hint" className="sr-only">Clears screenshots, exports, and styling.</p>
     </Form>
   );
 }
