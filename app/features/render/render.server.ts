@@ -42,6 +42,19 @@ export async function renderAsset(input: RenderInput): Promise<RenderResult> {
     throw new RenderError(`Invalid target size: ${width}x${height}`);
   }
 
+  if (config.exportMode === "resize") {
+    const buffer = await sharp(source)
+      .resize(width, height, {
+        fit: config.screenshotFit,
+        position: config.screenshotFit === "cover" ? "top" : "centre",
+        background: "#FFFFFF",
+      })
+      .flatten({ background: "#FFFFFF" })
+      .png({ compressionLevel: 9 })
+      .toBuffer();
+    return { buffer, width, height, layoutMode: "stacked" };
+  }
+
   const sourceMeta = await sharp(source).metadata();
   if (!sourceMeta.width || !sourceMeta.height) {
     throw new RenderError("Could not read the source screenshot's dimensions.");

@@ -1,5 +1,7 @@
-export const TEMPLATE_KEYS = ["minimal"] as const;
+export const TEMPLATE_KEYS = ["minimal", "studio", "midnight", "bold", "editorial"] as const;
 export type TemplateKey = (typeof TEMPLATE_KEYS)[number];
+
+export const FONT_FAMILIES = ["sans-serif", "serif", "monospace"] as const;
 
 export type FontWeight = "regular" | "medium" | "bold";
 export type TextAlign = "left" | "center" | "right";
@@ -16,6 +18,7 @@ export type ScreenshotFit = "cover" | "contain";
  * into the browser bundle; parsing lives in `config.server.ts`.
  */
 export type TemplateConfig = {
+  exportMode: "template" | "resize";
   templateKey: TemplateKey;
   headline: string;
 
@@ -47,9 +50,10 @@ export type TemplateConfig = {
 };
 
 export const defaultTemplateConfig: TemplateConfig = {
+  exportMode: "template",
   templateKey: "minimal",
   headline: "",
-  fontFamily: "Inter",
+  fontFamily: "sans-serif",
   fontWeight: "bold",
   headlineScale: 0.055,
   align: "center",

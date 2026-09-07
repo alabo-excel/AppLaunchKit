@@ -1,16 +1,17 @@
 import { z } from "zod";
 
-import { TEMPLATE_KEYS, defaultTemplateConfig, type TemplateConfig } from "./types";
+import { TEMPLATE_KEYS, FONT_FAMILIES, defaultTemplateConfig, type TemplateConfig } from "./types";
 
 const hexColor = z
   .string()
   .regex(/^#[0-9a-fA-F]{6}$/, "Use a 6-digit hex colour, e.g. #111111");
 
 export const templateConfigSchema = z.object({
+  exportMode: z.enum(["template", "resize"]).default("template"),
   templateKey: z.enum(TEMPLATE_KEYS).default(defaultTemplateConfig.templateKey),
   headline: z.string().max(140).default(defaultTemplateConfig.headline),
 
-  fontFamily: z.string().min(1).max(60).default(defaultTemplateConfig.fontFamily),
+  fontFamily: z.enum(FONT_FAMILIES).catch("sans-serif").default("sans-serif"),
   fontWeight: z
     .enum(["regular", "medium", "bold"])
     .default(defaultTemplateConfig.fontWeight),

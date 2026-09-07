@@ -17,9 +17,9 @@ import {
   type StoreTarget,
 } from "~/features/store/types";
 import type { AssetValidation } from "~/features/store/validate";
-import { templates } from "~/features/templates/registry";
+import { applyTemplate, templates } from "~/features/templates/registry";
 import { parseTemplateConfig } from "~/features/templates/config.server";
-import { defaultTemplateConfig, type TemplateConfig } from "~/features/templates/types";
+import { defaultTemplateConfig, FONT_FAMILIES, type TemplateConfig } from "~/features/templates/types";
 import { MAX_SCREENSHOTS } from "~/features/workspace/limits";
 import {
   clearAssets,
@@ -55,7 +55,7 @@ export async function loader({ context }: Route.LoaderArgs) {
   return {
     screenshots: sortedScreenshots(workspace),
     assets: workspace.assets,
-    style: { ...defaultTemplateConfig, ...workspace.style } as TemplateConfig,
+    style: parseTemplateConfig(workspace.style),
     platforms: groupTargetsByPlatform(),
   };
 }
@@ -622,6 +622,57 @@ function Editor({
 
   return (
     <div className="space-y-6">
+      <fieldset className="grid gap-3 sm:grid-cols-2">
+        <legend className="mb-2 text-sm font-semibold">How would you like to export?</legend>
+        {([
+          ["template", "Use a template", "Add a headline, colors, and framing to your screenshots."],
+          ["resize", "Resize screenshots only", "Export your screenshots at different sizes without captions or decoration."],
+        ] as const).map(([mode, title, description]) => (
+          <label key={mode} className={cn("flex cursor-pointer items-start gap-3 rounded-xl border p-4", config.exportMode === mode ? "border-violet-500 bg-violet-500/5" : "border-zinc-200 dark:border-zinc-700")}>
+            <input type="radio" name="export-mode" value={mode} checked={config.exportMode === mode} onChange={() => set("exportMode", mode)} className="mt-1 accent-violet-600" />
+            <span><span className="block text-sm font-semibold">{title}</span><span className="mt-1 block text-xs text-zinc-500">{description}</span></span>
+          </label>
+        ))}
+      </fieldset>
+      {config.exportMode === "template" && <Card>
+        <CardHeader>
+          <CardTitle>Starter templates</CardTitle>
+          <p className="mt-1 text-sm text-zinc-500">
+            Pick a starting point, then customize the colors, headline, and framing.
+            Switching templates keeps your headline and screenshot captions.
+          </p>
+        </CardHeader>
+        <CardBody>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+            {templates.map((template) => (
+              <button
+                key={template.key}
+                type="button"
+                aria-pressed={config.templateKey === template.key}
+                onClick={() => setConfig((current) => applyTemplate(template.key, current))}
+                className={cn(
+                  "overflow-hidden rounded-lg border-2 text-left transition focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet-500",
+                  config.templateKey === template.key
+                    ? "border-violet-500 ring-2 ring-violet-500/20"
+                    : "border-zinc-200 hover:border-violet-300 dark:border-zinc-700",
+                )}
+              >
+                <img
+                  src={`/templates/${template.key}.png`}
+                  alt={`${template.name} sample mockup`}
+                  width={270}
+                  height={480}
+                  className="aspect-[9/16] w-full object-cover"
+                />
+                <div className="space-y-1 p-2">
+                  <p className="text-sm font-semibold">{template.name}</p>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">{template.description}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </CardBody>
+      </Card>}
       <div className="grid gap-6 xl:grid-cols-[1fr_280px]">
         <Card className="self-start">
           <CardHeader className="flex flex-wrap items-center justify-between gap-2">
@@ -676,7 +727,7 @@ function Editor({
               )}
             </div>
 
-            {previewScreenshot && !previewScreenshot.caption ? (
+            {config.exportMode === "template" && previewScreenshot && !previewScreenshot.caption ? (
               <p className="text-xs text-zinc-500">
                 This screenshot has no caption, so the shared headline is used.
                 Give each screenshot its own caption on the left.
@@ -685,29 +736,13 @@ function Editor({
           </CardBody>
         </Card>
 
-        <Card className="self-start">
+        {config.exportMode === "template" ? <Card className="self-start">
           <CardHeader>
             <CardTitle>Style</CardTitle>
           </CardHeader>
           <CardBody>
             <div className="space-y-4">
-              <Field label="Template">
-                <Select
-                  value={config.templateKey}
-                  onChange={(event) =>
-                    set(
-                      "templateKey",
-                      event.target.value as TemplateConfig["templateKey"],
-                    )
-                  }
-                >
-                  {templates.map((template) => (
-                    <option key={template.key} value={template.key}>
-                      {template.name}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
+
 
               <Field
                 label="Shared headline"
@@ -719,6 +754,19 @@ function Editor({
                   placeholder="Put the Word First"
                   onChange={(event) => set("headline", event.target.value)}
                 />
+              </Field>
+
+              <Field label="Font family">
+                <Select
+                  value={config.fontFamily}
+                  onChange={(event) => set("fontFamily", event.target.value)}
+                >
+                  {FONT_FAMILIES.map((family) => (
+                    <option key={family} value={family}>
+                      {{ "sans-serif": "Sans serif", serif: "Serif", monospace: "Monospace" }[family]}
+                    </option>
+                  ))}
+                </Select>
               </Field>
 
               <div className="grid grid-cols-2 gap-3">
@@ -833,7 +881,19 @@ function Editor({
               </label>
             </div>
           </CardBody>
-        </Card>
+        </Card> : (
+          <Card className="self-start">
+            <CardHeader><CardTitle>Resize settings</CardTitle></CardHeader>
+            <CardBody>
+              <Field label="Screenshot fit" hint="Fill crops the image to match the target. Fit keeps the entire screenshot and adds white margins where needed. Images are never stretched.">
+                <Select value={config.screenshotFit} onChange={(event) => set("screenshotFit", event.target.value as TemplateConfig["screenshotFit"])}>
+                  <option value="cover">Fill — crop to size</option>
+                  <option value="contain">Fit — keep full screenshot</option>
+                </Select>
+              </Field>
+            </CardBody>
+          </Card>
+        )}
       </div>
 
       <Card>
@@ -922,7 +982,9 @@ function ConfigFields({ config }: { config: TemplateConfig }) {
   return (
     <>
       {Object.entries(config).map(([key, value]) => (
-        <input key={key} type="hidden" name={key} value={String(value)} />
+        <input key={key} type="hidden" name={key} value={String(
+          key === "fontFamily" ? config.fontFamily.trim() || defaultTemplateConfig.fontFamily : value,
+        )} />
       ))}
     </>
   );
@@ -1011,7 +1073,9 @@ function useDebouncedPreviewUrl(input: {
       targetId: input.targetId,
     });
     for (const [key, value] of Object.entries(input.config)) {
-      params.set(key, String(value));
+      params.set(key, String(
+        key === "fontFamily" ? input.config.fontFamily.trim() || defaultTemplateConfig.fontFamily : value,
+      ));
     }
     return `/preview?${params.toString()}`;
   }, [input.screenshotId, input.targetId, input.config]);
