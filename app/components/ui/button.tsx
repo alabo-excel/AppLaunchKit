@@ -7,7 +7,7 @@ type ButtonSize = "sm" | "md";
 
 const variants: Record<ButtonVariant, string> = {
   primary:
-    "bg-zinc-900 text-white hover:bg-zinc-800 disabled:bg-zinc-400 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200",
+    "bg-teal-700 text-white hover:bg-teal-800 disabled:bg-zinc-400 dark:bg-teal-300 dark:text-teal-950 dark:hover:bg-teal-200",
   secondary:
     "border border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800",
   ghost:
@@ -17,8 +17,8 @@ const variants: Record<ButtonVariant, string> = {
 };
 
 const sizes: Record<ButtonSize, string> = {
-  sm: "h-8 px-3 text-sm",
-  md: "h-10 px-4 text-sm",
+  sm: "min-h-11 px-3 py-2 text-sm",
+  md: "min-h-11 px-5 py-2.5 text-sm",
 };
 
 export function Button({
@@ -34,7 +34,7 @@ export function Button({
     <button
       {...props}
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors",
+        "inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg font-medium transition-colors",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:focus-visible:outline-zinc-100",
         "disabled:cursor-not-allowed disabled:opacity-60",
         variants[variant],

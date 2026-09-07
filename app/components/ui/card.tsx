@@ -7,7 +7,7 @@ export function Card({ className, ...props }: ComponentProps<"div">) {
     <div
       {...props}
       className={cn(
-        "rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900",
+        "min-w-0 rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900",
         className,
       )}
     />
@@ -19,7 +19,7 @@ export function CardHeader({ className, ...props }: ComponentProps<"div">) {
     <div
       {...props}
       className={cn(
-        "border-b border-zinc-200 px-4 py-3 dark:border-zinc-800",
+        "border-b border-zinc-200 px-5 py-4 dark:border-zinc-800",
         className,
       )}
     />
@@ -39,5 +39,5 @@ export function CardTitle({ className, ...props }: ComponentProps<"h2">) {
 }
 
 export function CardBody({ className, ...props }: ComponentProps<"div">) {
-  return <div {...props} className={cn("p-4", className)} />;
+  return <div {...props} className={cn("p-5", className)} />;
 }

@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Form, data, useFetcher, useNavigation } from "react-router";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { Form, data, redirect, useFetcher, useFetchers, useNavigation } from "react-router";
 
 import { Alert } from "~/components/ui/alert";
 import { Button } from "~/components/ui/button";
 import { Card, CardBody, CardHeader, CardTitle } from "~/components/ui/card";
 import { ProgressBar, Spinner } from "~/components/ui/spinner";
 import { ColorInput, Field, Input, Select } from "~/components/ui/field";
-import { readWorkspace, type StoredAsset, type StoredScreenshot } from "~/features/storage/local-store.server";
+import { readWorkspace, removeWorkspace, type StoredAsset, type StoredScreenshot } from "~/features/storage/local-store.server";
 import {
   groupTargetsByPlatform,
   storeTargets,
@@ -67,7 +67,7 @@ type ActionResult = {
   ok?: boolean;
 };
 
-type ActionReturn = ActionResult | ReturnType<typeof data<ActionResult>>;
+type ActionReturn = ActionResult | ReturnType<typeof data<ActionResult>> | Response;
 
 export async function action({
   request,
@@ -76,6 +76,11 @@ export async function action({
   const sessionId = getSessionId(context);
   const formData = await request.formData();
   const intent = formData.get("intent");
+
+  if (intent === "restart") {
+    await removeWorkspace(sessionId);
+    return redirect("/");
+  }
 
   if (intent === "upload") {
     const files = formData
@@ -135,17 +140,30 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
   const { screenshots, assets, style, platforms } = loaderData;
 
   return (
-    <main className="mx-auto max-w-6xl space-y-6 px-6 py-8">
-      <header className="space-y-1">
-        <p className="text-sm font-medium text-zinc-500">AppLaunchKit</p>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Turn your app screenshots into store-ready assets
-        </h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Upload your screenshots, pick the devices you need, and export the lot.
-          No account required — your workspace lives in this browser for 7 days.
-        </p>
+    <main id="workspace" className="mx-auto max-w-[1440px] space-y-8 px-4 pb-12 sm:px-8">
+      <a href="#workspace-content" className="skip-link">Skip to workspace</a>
+      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-200 py-5 dark:border-zinc-800">
+        <a href="/" className="flex items-center gap-3 font-bold tracking-tight">
+          <span className="brand-mark" aria-hidden="true"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="4" y="3" width="11" height="16" rx="3"/><path d="M9 21h8a3 3 0 0 0 3-3V8M8 7h3"/></svg></span>
+          AppLaunchKit <span className="hidden text-xs font-medium text-zinc-500 sm:inline">/ Screenshot studio</span>
+        </a>
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="rounded-full border border-zinc-200 px-3 py-1.5 text-xs text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">No account needed · 7-day workspace</span>
+          {screenshots.length > 0 || assets.length > 0 ? <RestartButton /> : null}
+        </div>
       </header>
+      <section id="workspace-content" className="flex flex-wrap items-end justify-between gap-6">
+        <div className="max-w-2xl space-y-3">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">Your next launch starts here</p>
+          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Small screens. Big first impressions.</h1>
+          <p className="max-w-xl text-base leading-relaxed text-zinc-600 dark:text-zinc-400">Give your app a polished storefront. Style your screenshots or simply resize them for the App Store and Google Play.</p>
+        </div>
+        <ol aria-label="Your workflow" className="flex flex-wrap gap-4 text-xs font-medium text-zinc-600 dark:text-zinc-300">
+          {["Upload", "Customize", "Export"].map((step, index) => (
+            <li key={step} className="flex items-center gap-2"><span className={cn("flex size-7 items-center justify-center rounded-full border", index === (screenshots.length === 0 ? 0 : assets.length > 0 ? 2 : 1) ? "border-teal-700 bg-teal-700 text-white" : "border-zinc-300 dark:border-zinc-700")}>{index + 1}</span>{step}</li>
+          ))}
+        </ol>
+      </section>
 
       {actionData?.error ? <Alert tone="error">{actionData.error}</Alert> : null}
       {actionData?.upload ? <UploadReport report={actionData.upload} /> : null}
@@ -156,7 +174,7 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
       {screenshots.length === 0 ? (
         <EmptyState />
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
+        <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
           <ScreenshotPanel screenshots={screenshots} />
           <Editor
             screenshots={screenshots}
@@ -168,6 +186,24 @@ export default function Home({ loaderData, actionData }: Route.ComponentProps) {
 
       <AssetGallery assets={assets} screenshots={screenshots} />
     </main>
+  );
+}
+
+function RestartButton() {
+  const navigation = useNavigation();
+  const fetchers = useFetchers();
+  const restarting = navigation.formData?.get("intent") === "restart";
+  const busy = navigation.state !== "idle" || fetchers.some((fetcher) => fetcher.state !== "idle");
+
+  return (
+    <Form method="post" replace className="space-y-1">
+      <input type="hidden" name="intent" value="restart" />
+      <Button type="submit" variant="secondary" disabled={busy} aria-describedby="restart-hint">
+        {restarting ? <Spinner /> : <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3 10a9 9 0 1 1 2 8M3 4v6h6" /></svg>}
+        {restarting ? "Starting over…" : "Start over"}
+      </Button>
+      <p id="restart-hint" className="text-xs text-zinc-500">Clears screenshots, exports, and styling.</p>
+    </Form>
   );
 }
 
@@ -262,7 +298,7 @@ function UploadForm({ compact }: { compact?: boolean }) {
         onDragLeave={() => setDragging(false)}
         onDrop={handleDrop}
         className={cn(
-          "rounded-lg border-2 border-dashed text-center text-sm transition-colors",
+          "upload-zone rounded-xl border-2 border-dashed text-center text-sm transition-colors focus-within:ring-2 focus-within:ring-teal-600 focus-within:ring-offset-4",
           uploading
             ? "border-zinc-300 dark:border-zinc-700"
             : "border-zinc-300 hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:border-zinc-600 dark:hover:bg-zinc-800/50",
@@ -302,6 +338,7 @@ function UploadForm({ compact }: { compact?: boolean }) {
               padding,
             )}
           >
+            <svg aria-hidden="true" className="mb-3 size-9 text-teal-700 dark:text-teal-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 16V3m-5 5 5-5 5 5M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg>
             <span className="font-medium">
               {dragging
                 ? "Drop to add"
@@ -309,6 +346,7 @@ function UploadForm({ compact }: { compact?: boolean }) {
                   ? "Drop screenshots here"
                   : "Drop your screenshots here"}
             </span>
+            <span className="mb-2 text-xs">Click to browse or drag and drop</span>
             <span className="text-xs">
               PNG, JPG or WEBP · up to 8MB each · {MAX_SCREENSHOTS} max
             </span>
@@ -360,16 +398,24 @@ function UploadForm({ compact }: { compact?: boolean }) {
 
 function EmptyState() {
   return (
-    <Card>
-      <CardBody className="space-y-4">
-        <UploadForm />
-        <p className="text-xs text-zinc-500">
-          Screenshots are fitted into each store's composition, never stretched.
-          A portrait phone screenshot becomes a properly composed tablet asset —
-          no tablet required.
-        </p>
-      </CardBody>
-    </Card>
+    <div className="grid items-stretch gap-6 lg:grid-cols-[1fr_1fr]">
+      <Card>
+        <CardHeader><CardTitle>01 / Add your screenshots</CardTitle></CardHeader>
+        <CardBody className="space-y-5 sm:p-8">
+          <div><h2 className="text-xl font-semibold">Start with what you’ve built.</h2><p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">Upload one screen or a whole collection. You can reorder them and add individual captions next.</p></div>
+          <UploadForm />
+          <p className="text-center text-xs text-zinc-500">Original proportions preserved. Ready for phone and tablet sizes.</p>
+        </CardBody>
+      </Card>
+      <section className="showcase-panel rounded-2xl p-6 sm:p-8" aria-label="Template examples">
+        <div className="flex items-center justify-between gap-4"><p className="text-xs font-semibold uppercase tracking-widest">A head start on your launch</p><span className="rounded-full border border-current px-2 py-1 text-xs">5 starters</span></div>
+        <div className="mx-auto grid max-w-md grid-cols-3 items-center gap-3 py-8 sm:gap-5">
+          {["editorial", "studio", "midnight"].map((key, index) => <img key={key} src={`/templates/${key}.png`} alt={`${key} starter template example`} width={270} height={480} className={cn("w-full rounded-lg", index === 1 ? "my-0" : "mt-10")} />)}
+        </div>
+        <h2 className="text-xl font-semibold">Your app, with a little extra polish.</h2>
+        <p className="mt-2 max-w-md text-sm leading-relaxed">Start with a ready-made style, make it yours, and export every size you need. Prefer the original? Choose resize only.</p>
+      </section>
+    </div>
   );
 }
 
@@ -628,8 +674,8 @@ function Editor({
           ["template", "Use a template", "Add a headline, colors, and framing to your screenshots."],
           ["resize", "Resize screenshots only", "Export your screenshots at different sizes without captions or decoration."],
         ] as const).map(([mode, title, description]) => (
-          <label key={mode} className={cn("flex cursor-pointer items-start gap-3 rounded-xl border p-4", config.exportMode === mode ? "border-violet-500 bg-violet-500/5" : "border-zinc-200 dark:border-zinc-700")}>
-            <input type="radio" name="export-mode" value={mode} checked={config.exportMode === mode} onChange={() => set("exportMode", mode)} className="mt-1 accent-violet-600" />
+          <label key={mode} className={cn("flex cursor-pointer items-start gap-3 rounded-xl border p-4", config.exportMode === mode ? "border-teal-600 bg-teal-600/5" : "border-zinc-200 dark:border-zinc-700")}>
+            <input type="radio" name="export-mode" value={mode} checked={config.exportMode === mode} onChange={() => set("exportMode", mode)} className="mt-1 accent-teal-700" />
             <span><span className="block text-sm font-semibold">{title}</span><span className="mt-1 block text-xs text-zinc-500">{description}</span></span>
           </label>
         ))}
@@ -651,9 +697,9 @@ function Editor({
                 aria-pressed={config.templateKey === template.key}
                 onClick={() => setConfig((current) => applyTemplate(template.key, current))}
                 className={cn(
-                  "overflow-hidden rounded-lg border-2 text-left transition focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet-500",
+                  "min-w-0 cursor-pointer overflow-hidden rounded-xl border-2 text-left transition focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet-500",
                   config.templateKey === template.key
-                    ? "border-violet-500 ring-2 ring-violet-500/20"
+                    ? "border-teal-600 ring-2 ring-teal-600/20"
                     : "border-zinc-200 hover:border-violet-300 dark:border-zinc-700",
                 )}
               >
@@ -665,7 +711,7 @@ function Editor({
                   className="aspect-[9/16] w-full object-cover"
                 />
                 <div className="space-y-1 p-2">
-                  <p className="text-sm font-semibold">{template.name}</p>
+                  <p className="text-sm font-semibold">{template.name}</p>{config.templateKey === template.key && <span className="text-xs font-semibold text-teal-700 dark:text-teal-300">Selected</span>}
                   <p className="text-xs text-zinc-500 dark:text-zinc-400">{template.description}</p>
                 </div>
               </button>
@@ -673,10 +719,10 @@ function Editor({
           </div>
         </CardBody>
       </Card>}
-      <div className="grid gap-6 xl:grid-cols-[1fr_280px]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
         <Card className="self-start">
           <CardHeader className="flex flex-wrap items-center justify-between gap-2">
-            <CardTitle>Preview</CardTitle>
+            <CardTitle>Live preview</CardTitle>
             {previewTarget ? (
               <span className="text-xs text-zinc-500">
                 {previewTarget.targetWidth} × {previewTarget.targetHeight} ·{" "}
@@ -713,13 +759,9 @@ function Editor({
               </Field>
             </div>
 
-            <div className="flex justify-center rounded-lg bg-zinc-50 p-4 dark:bg-zinc-950/40">
+            <div className="preview-canvas flex min-h-80 items-center justify-center rounded-xl p-5 sm:p-8">
               {previewUrl ? (
-                <img
-                  src={previewUrl}
-                  alt="Generated asset preview"
-                  className="max-h-[480px] w-auto rounded border border-zinc-200 shadow-sm dark:border-zinc-800"
-                />
+                <PreviewImage key={previewUrl} url={previewUrl} />
               ) : (
                 <div className="flex h-72 items-center text-sm text-zinc-500">
                   Pick a device to preview.
@@ -870,7 +912,7 @@ function Editor({
                 onChange={(value) => set("cornerRadius", value)}
               />
 
-              <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+              <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm text-zinc-700 dark:text-zinc-300">
                 <input
                   type="checkbox"
                   checked={config.shadow}
@@ -898,7 +940,7 @@ function Editor({
 
       <Card>
         <CardHeader className="flex flex-wrap items-center justify-between gap-2">
-          <CardTitle>What to generate</CardTitle>
+          <CardTitle>Export sizes</CardTitle>
           <span className="text-xs text-zinc-500">
             {selectedTargets.length}{" "}
             {selectedTargets.length === 1 ? "device" : "devices"} ·{" "}
@@ -977,6 +1019,17 @@ function Editor({
   );
 }
 
+function PreviewImage({ url }: { url: string }) {
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [attempt, setAttempt] = useState(0);
+  return (
+    <div className="relative flex min-h-72 w-full items-center justify-center" aria-busy={status === "loading"}>
+      {status === "loading" && <div role="status" className="absolute flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm text-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"><Spinner /> Updating preview…</div>}
+      {status === "error" ? <div role="alert" className="space-y-3 text-center"><p className="text-sm">We couldn’t load this preview.</p><Button variant="secondary" onClick={() => { setStatus("loading"); setAttempt((value) => value + 1); }}>Try again</Button></div> : <img src={`${url}&retry=${attempt}`} alt="Your screenshot with the current export settings" onLoad={() => setStatus("ready")} onError={() => setStatus("error")} className={cn("max-h-[540px] max-w-full rounded object-contain shadow-lg", status === "loading" && "opacity-0")} />}
+    </div>
+  );
+}
+
 /** Mirrors the controlled style panel into whichever form is submitted. */
 function ConfigFields({ config }: { config: TemplateConfig }) {
   return (
@@ -1000,7 +1053,7 @@ function TargetCheckbox({
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+    <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm text-zinc-700 dark:text-zinc-300">
       <input
         type="checkbox"
         name="targetIds"
@@ -1034,22 +1087,24 @@ function RangeField({
   value: number;
   onChange: (value: number) => void;
 }) {
+  const id = useId();
   return (
     <div className="space-y-1.5">
       <div className="flex items-baseline justify-between">
-        <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+        <label htmlFor={id} className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
           {label}
-        </span>
+        </label>
         <span className="text-xs text-zinc-500">{value.toFixed(3)}</span>
       </div>
       <input
+        id={id}
         type="range"
         min={min}
         max={max}
         step={step}
         value={value}
         onChange={(event) => onChange(Number(event.target.value))}
-        className="w-full accent-zinc-900 dark:accent-zinc-100"
+        className="h-8 w-full cursor-pointer accent-teal-700 dark:accent-teal-300"
       />
       {hint ? <p className="text-xs text-zinc-500">{hint}</p> : null}
     </div>

@@ -1,7 +1,8 @@
 @import "tailwindcss";
+@source not "../.agents";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
@@ -51,4 +52,29 @@ body {
     width: 100%;
     opacity: 0.4;
   }
+}
+
+:root {
+  --studio-canvas: #f4f7f6;
+  --studio-accent: #0f766e;
+  --studio-tint: #e3f0ec;
+  --studio-ink: #134e4a;
+  --studio-grid: #d8e1dd;
+}
+body { min-height: 100dvh; background: var(--studio-canvas); }
+.brand-mark { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--studio-accent); color: white; }
+.showcase-panel { background: var(--studio-tint); color: var(--studio-ink); }
+.preview-canvas { background-color: var(--studio-canvas); background-image: radial-gradient(var(--studio-grid) 1px, transparent 1px); background-size: 16px 16px; }
+.skip-link { position: absolute; left: 1rem; top: -5rem; z-index: 50; padding: 12px 20px; background: var(--studio-accent); color: white; border-radius: 8px; }
+.skip-link:focus { top: 1rem; }
+:where(button, a, input, select, summary):focus-visible { outline: 2px solid var(--studio-accent); outline-offset: 3px; }
+:where(button, a, input, select) { touch-action: manipulation; }
+h1, h2 { text-wrap: balance; }
+@media (prefers-color-scheme: dark) {
+  :root { --studio-canvas: #111817; --studio-accent: #5eead4; --studio-tint: #19372f; --studio-ink: #d1fae5; --studio-grid: #34403c; }
+  .brand-mark { color: #134e4a; }
+  .skip-link { color: #134e4a; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
 }

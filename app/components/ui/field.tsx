@@ -1,4 +1,4 @@
-import type { ComponentProps, ReactNode } from "react";
+import { cloneElement, isValidElement, useId, type ComponentProps, type ReactElement, type ReactNode } from "react";
 
 import { cn } from "~/lib/cn";
 
@@ -15,21 +15,27 @@ export function Field({
   children: ReactNode;
   className?: string;
 }) {
+  const id = useId();
+  const descriptionId = `${id}-description`;
   return (
-    <label className={cn("block space-y-1.5", className)}>
-      <span className="block text-sm font-medium text-zinc-800 dark:text-zinc-200">
+    <div className={cn("block space-y-1.5", className)}>
+      <label htmlFor={id} className="block text-sm font-medium text-zinc-800 dark:text-zinc-200">
         {label}
-      </span>
-      {children}
+      </label>
+      {isValidElement(children) ? cloneElement(children as ReactElement<ComponentProps<"input">>, {
+        id,
+        "aria-describedby": hint || error ? descriptionId : undefined,
+        "aria-invalid": error ? true : undefined,
+      }) : children}
       {hint && !error ? (
-        <span className="block text-xs text-zinc-500">{hint}</span>
+        <span id={descriptionId} className="block text-xs text-zinc-500">{hint}</span>
       ) : null}
       {error ? (
         <span className="block text-xs text-red-600 dark:text-red-400">
           {error}
         </span>
       ) : null}
-    </label>
+    </div>
   );
 }
 
@@ -38,7 +44,7 @@ export function Input({ className, ...props }: ComponentProps<"input">) {
     <input
       {...props}
       className={cn(
-        "block h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900",
+        "block h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-base sm:text-sm text-zinc-900",
         "placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none",
         "dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-zinc-400",
         className,
@@ -52,7 +58,7 @@ export function Select({ className, ...props }: ComponentProps<"select">) {
     <select
       {...props}
       className={cn(
-        "block h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900",
+        "block h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-base sm:text-sm text-zinc-900",
         "focus:border-zinc-900 focus:outline-none",
         "dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-zinc-400",
         className,
@@ -67,7 +73,7 @@ export function ColorInput({ className, ...props }: ComponentProps<"input">) {
       {...props}
       type="color"
       className={cn(
-        "h-10 w-full cursor-pointer rounded-lg border border-zinc-300 bg-white p-1",
+        "h-11 w-full cursor-pointer rounded-lg border border-zinc-300 bg-white p-1",
         "dark:border-zinc-700 dark:bg-zinc-900",
         className,
       )}
