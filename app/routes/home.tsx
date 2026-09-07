@@ -800,12 +800,17 @@ function Editor({
               </Field>
 
               <RangeField
-                label="Screenshot size"
-                min={0.4}
-                max={1}
-                step={0.01}
-                value={config.screenshotScale}
-                onChange={(value) => set("screenshotScale", value)}
+                label="Frame padding"
+                hint={
+                  config.framePadding === 0
+                    ? "Full bleed — the screenshot reaches every edge."
+                    : "Insets the screenshot, showing the background around it."
+                }
+                min={0}
+                max={0.12}
+                step={0.005}
+                value={config.framePadding}
+                onChange={(value) => set("framePadding", value)}
               />
 
               <RangeField
@@ -952,6 +957,7 @@ function TargetCheckbox({
 
 function RangeField({
   label,
+  hint,
   min,
   max,
   step,
@@ -959,6 +965,7 @@ function RangeField({
   onChange,
 }: {
   label: string;
+  hint?: string;
   min: number;
   max: number;
   step: number;
@@ -982,6 +989,7 @@ function RangeField({
         onChange={(event) => onChange(Number(event.target.value))}
         className="w-full accent-zinc-900 dark:accent-zinc-100"
       />
+      {hint ? <p className="text-xs text-zinc-500">{hint}</p> : null}
     </div>
   );
 }

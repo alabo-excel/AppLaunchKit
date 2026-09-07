@@ -35,8 +35,12 @@ export type TemplateConfig = {
    * wide side margins.
    */
   screenshotFit: ScreenshotFit;
-  /** How much of the available box the screenshot fills. */
-  screenshotScale: number;
+  /**
+   * How far the screenshot is inset from the canvas edges, as a fraction of the
+   * canvas's short side. Zero — the default — bleeds it to the edges: a ring of
+   * background colour around a screenshot reads as wasted space on a listing.
+   */
+  framePadding: number;
   /** Corner radius as a fraction of the placed screenshot's short side. */
   cornerRadius: number;
   shadow: boolean;
@@ -52,7 +56,9 @@ export const defaultTemplateConfig: TemplateConfig = {
   backgroundColor: "#F4F4F5",
   textColor: "#111111",
   screenshotFit: "cover",
-  screenshotScale: 1,
-  cornerRadius: 0.035,
-  shadow: true,
+  // Full bleed, square corners, no shadow: the screenshot is the asset. Corner
+  // radius and shadow only make sense once framePadding leaves room for them.
+  framePadding: 0,
+  cornerRadius: 0,
+  shadow: false,
 };

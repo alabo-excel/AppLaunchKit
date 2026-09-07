@@ -29,11 +29,11 @@ export const templateConfigSchema = z.object({
   screenshotFit: z
     .enum(["cover", "contain"])
     .default(defaultTemplateConfig.screenshotFit),
-  screenshotScale: z.coerce
+  framePadding: z.coerce
     .number()
-    .min(0.4)
-    .max(1)
-    .default(defaultTemplateConfig.screenshotScale),
+    .min(0)
+    .max(0.12)
+    .default(defaultTemplateConfig.framePadding),
   cornerRadius: z.coerce
     .number()
     .min(0)

@@ -98,7 +98,17 @@ mode and timing for each.
    fraction of the canvas, so one style renders consistently at 1080×1920 and at
    2880×1620 — and the scaled-down preview is a faithful representation of the
    full-size asset rather than an approximation.
-3. **The source is scaled, never stretched.** Its aspect ratio is always
+3. **Full bleed by default.** The screenshot reaches every canvas edge. A ring
+   of background colour around a screenshot reads as wasted space on a store
+   listing, so `framePadding` starts at zero — along with square corners and no
+   shadow, which only make sense once padding leaves room for them. Raise
+   **Frame padding** in the editor to inset it and show the background again.
+
+   With no caption the screenshot covers 100% of the canvas. With one, the
+   headline takes a band at the top (portrait) or a column on the left
+   (landscape) and the screenshot fills everything else, flush to the remaining
+   edges.
+4. **The source is scaled, never stretched.** Its aspect ratio is always
    preserved. Two fits are available, and both layouts honour the choice:
    - **Cover** (default) fills the frame and crops whatever overflows, anchored
      to the top so the app's own header survives and the bottom is what gets
@@ -109,25 +119,25 @@ mode and timing for each.
    source's. From a 9:16 phone screenshot: iPhone loses nothing; phone and
    Android tablet portrait lose ~9%; iPad portrait, a 3:4 canvas, loses about a
    third; landscape targets lose about half. Switch a run to Contain if you need
-   the whole screen — it never crops, at the cost of much smaller output (a
-   landscape tablet drops from 56% of the canvas width to 27%).
+   the whole screen — it never crops, at the cost of leaving background visible
+   wherever the shapes disagree.
 
-4. **Tablet composition adapts.** A portrait phone screenshot dropped into a
+5. **Tablet composition adapts.** A portrait phone screenshot dropped into a
    landscape tablet canvas would become a thin sliver under a wide headline, so
    the layout switches to side-by-side and centres the headline and screenshot as
    one group. When covering, the headline column also gives up width so the
    screenshot dominates the asset. This is what makes a phone screenshot usable
    as a tablet asset without owning a tablet.
-5. **One pass covers the listing.** Generate renders every screenshot against
+6. **One pass covers the listing.** Generate renders every screenshot against
    every selected device. Each screenshot contributes its own caption as the
    headline, so a single run produces a correctly captioned set — shared styling,
    per-screenshot text.
-6. **Every asset is validated** against the target it was generated for
+7. **Every asset is validated** against the target it was generated for
    (dimensions, per-side bounds, orientation, aspect ratio, format, file size)
    before it is stored. A render that fails validation is not saved. The aspect
    check matters for Google Play, which accepts only 16:9 or 9:16 — it is
    asserted rather than assumed from the target size looking right.
-7. **Regenerating replaces.** A second run for the same screenshot and device
+8. **Regenerating replaces.** A second run for the same screenshot and device
    supersedes the old asset instead of stacking duplicates into the export.
 
 ---
@@ -204,7 +214,7 @@ modules (`limits.ts`, `requirements.ts`) for the same reason.
   takes 8, Apple 10)
 - Minimal template with live server-rendered preview (debounced)
 - Headline, weight, alignment, text size, colours, screenshot fit (cover or
-  contain), screenshot size, corner radius, drop shadow — remembered between
+  contain), frame padding, corner radius, drop shadow — remembered between
   visits
 - Batch generation (every screenshot × every selected device) with per-asset
   store validation
