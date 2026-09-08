@@ -27,7 +27,10 @@ const TARGETS = [
   { name: "play-tablet10-portrait", width: 1620, height: 2880 },
   { name: "play-tablet10-landscape", width: 2880, height: 1620 },
   { name: "play-chromebook-landscape", width: 1920, height: 1080 },
-  { name: "apple-iphone-portrait", width: 1290, height: 2796 },
+  { name: "apple-iphone-portrait", width: 1242, height: 2688 },
+  { name: "apple-iphone-landscape", width: 2688, height: 1242 },
+  { name: "apple-iphone-1284-portrait", width: 1284, height: 2778 },
+  { name: "apple-iphone-1284-landscape", width: 2778, height: 1284 },
   { name: "apple-ipad-portrait", width: 2048, height: 2732 },
 ];
 
